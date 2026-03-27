@@ -1,0 +1,3 @@
+<launch>
+	<node_container pkg="rclcpp_components" exec="component_container_mt" name="shared_container" namespace="" output="screen"/>
+</launch>
