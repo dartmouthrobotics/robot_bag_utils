@@ -88,7 +88,7 @@ def generate_launch_description():
                     parameters=[{
                         'bag_name': bag_prefix,
                         'storage_id': 'mcap',
-                        'max_cache_size': 0,
+                        'max_cache_size': 104857600,
                         'record_all': False,
                         'serialization_format': 'cdr',
                         'start_recording_immediately': True,
