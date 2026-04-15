@@ -14,6 +14,32 @@ from launch_ros.descriptions import ComposableNode
 from ament_index_python.packages import get_package_share_directory
 
 
+def _zed_topic_prefixes(camera_config):
+    prefixes = []
+    for camera_name, camera_info in camera_config.get('cameras', {}).items():
+        serial_number = str(camera_info['serial_number'])
+        prefixes.append(f'/{camera_name}/{camera_name}_zedx_sn{serial_number}')
+    return prefixes
+
+
+def _zed_topics(camera_config):
+    suffixes = [
+        'left/color/raw/image/compressed',
+        'left/color/raw/camera_info',
+        'right/color/raw/image/compressed',
+        'right/color/raw/camera_info',
+        'depth/depth_registered',
+        'pose',
+        'odom',
+        'imu/data',
+    ]
+
+    topics = []
+    for prefix in _zed_topic_prefixes(camera_config):
+        topics.extend([f'{prefix}/{suffix}' for suffix in suffixes])
+    return topics
+
+
 def generate_launch_description():
 
     use_composable_arg = DeclareLaunchArgument(
@@ -51,12 +77,20 @@ def generate_launch_description():
         get_package_share_directory('catabot_bringup'),
         'param/recorder_topics.yaml',
     )
+    zed_cameras_file = os.path.join(
+        get_package_share_directory('catabot_bringup'),
+        'param/zed_cameras.yaml',
+    )
     with open(param_file, 'r') as f:
         recorder_config = yaml.safe_load(f)
-    topics = recorder_config['topics']
+    with open(zed_cameras_file, 'r') as f:
+        zed_camera_config = yaml.safe_load(f)
+
+    topics = recorder_config['topics'] + _zed_topics(zed_camera_config)
 
     # In composable mode, ZED streams are recorded by per-camera loggers.
-    composable_topics = [topic for topic in topics if "/zed/" not in topic]
+    zed_prefixes = tuple(_zed_topic_prefixes(zed_camera_config))
+    composable_topics = [topic for topic in topics if not topic.startswith(zed_prefixes)]
 
     standalone_record_cmd = ExecuteProcess(
         condition=UnlessCondition(use_composable),

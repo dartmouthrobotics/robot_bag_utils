@@ -62,40 +62,8 @@ topics:
   - /ouster/scan
 
   # ---------------------------------------------------------------- #
-  #  ZED X camera                                                    #
+  #  ZED X camera topics are derived at runtime from param/zed_cameras.yaml
   # ---------------------------------------------------------------- #
-  - /blue/zed/left/color/raw/image/compressed
-  - /blue/zed/left/color/raw/camera_info
-  - /blue/zed/right/color/raw/image/compressed
-  - /blue/zed/right/color/raw/camera_info
-  - /blue/zed/depth/depth_registered
-  - /blue/zed/pose
-  - /blue/zed/odom
-  - /blue/zed/imu/data
-  - /green/zed/left/color/raw/image/compressed
-  - /green/zed/left/color/raw/camera_info
-  - /green/zed/right/color/raw/image/compressed
-  - /green/zed/right/color/raw/camera_info
-  - /green/zed/depth/depth_registered
-  - /green/zed/pose
-  - /green/zed/odom
-  - /green/zed/imu/data
-  - /red/zed/left/color/raw/image/compressed
-  - /red/zed/left/color/raw/camera_info
-  - /red/zed/right/color/raw/image/compressed
-  - /red/zed/right/color/raw/camera_info
-  - /red/zed/depth/depth_registered
-  - /red/zed/pose
-  - /red/zed/odom
-  - /red/zed/imu/data
-  - /pink/zed/left/color/raw/image/compressed
-  - /pink/zed/left/color/raw/camera_info
-  - /pink/zed/right/color/raw/image/compressed
-  - /pink/zed/right/color/raw/camera_info
-  - /pink/zed/depth/depth_registered
-  - /pink/zed/pose
-  - /pink/zed/odom
-  - /pink/zed/imu/data
 
   # ---------------------------------------------------------------- #
   #  InertialLabs miniAHRS                                            #
