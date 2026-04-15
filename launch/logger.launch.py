@@ -64,7 +64,7 @@ def generate_launch_description():
             "ros2", "bag", "record",
             "--output", bag_prefix,
             "-s", "mcap",
-            "--max-cache-size", "0",
+            "--max-cache-size", "104857600",
     #        "--compression-mode", "file",
     #        "--compression-format", "zstd",
         ] + topics,
