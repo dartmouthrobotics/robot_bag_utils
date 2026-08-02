@@ -1,0 +1,12 @@
+/**:
+  ros__parameters:
+    regex_to_exclude: ".*(uncompressed|depth).*"
+    topics:
+      - "/zed1/zed_node/left/image_rect_color/compressed"
+      - "/zed1/zed_node/right/image_rect_color/compressed"
+      - "/tf"
+      - "/tf_static"
+    
+    qos_profile_overrides:
+      - topic: "/zed1/zed_node/left/image_rect_color/compressed"
+        reliability: "best_effort"

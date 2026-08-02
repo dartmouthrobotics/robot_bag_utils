@@ -1,0 +1,57 @@
+name: ROS 2 CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual triggering from the GitHub UI
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and Test (${{ matrix.ros_distribution }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Test against Humble (current stable for many robots)
+          - os: ubuntu-22.04
+            ros_distribution: humble
+          # Test against Jazzy (latest LTS)
+          - os: ubuntu-24.04
+            ros_distribution: jazzy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+
+      - name: Install dependencies (rosdep)
+        run: |
+          source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
+          sudo apt-get update
+          rosdep update
+          rosdep install --from-paths . --ignore-src -y --rosdistro ${{ matrix.ros_distribution }}
+
+      - name: Build Workspace
+        run: |
+          source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
+          # We build inside a temporary workspace to isolate it
+          mkdir -p ~/ws/src
+          cp -r $GITHUB_WORKSPACE ~/ws/src/
+          cd ~/ws
+          colcon build --packages-select ardupilot_mavros_utils --symlink-install --event-handlers console_direct+
+
+      - name: Test Workspace (flake8, copyright, etc.)
+        run: |
+          source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
+          cd ~/ws
+          source install/setup.bash
+          colcon test --packages-select ardupilot_mavros_utils --event-handlers console_direct+ --return-code-on-test-failure
+          colcon test-result --all --verbose

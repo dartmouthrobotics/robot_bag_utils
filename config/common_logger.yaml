@@ -1,0 +1,11 @@
+/**:
+  ros__parameters:
+    # Storage settings
+    storage_id: "mcap"
+    max_cache_size: 104857600       # 100 MB cache before writing to disk
+    max_bag_size: 2147483648        # 2 GB chunk sizes
+    max_bag_duration: 1800          # 30 minute chunks
+    storage_preset_profile: "zstd_fast" # High-speed compression
+    
+    # Node settings
+    use_sim_time: false

@@ -1,0 +1,11 @@
+/**:
+  ros__parameters:
+    topics:
+      - "/mavros/state"
+      - "/mavros/local_position/pose"
+      - "/mavros/local_position/velocity_body"
+      - "/mavros/imu/data"
+      - "/mavros/global_position/global"
+      - "/tf"
+      - "/tf_static"
+      - "/rosout"
