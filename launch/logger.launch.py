@@ -204,7 +204,7 @@ def launch_setup(context, *args, **kwargs):
 
 def generate_launch_description():
     default_root = os.path.join(os.path.expanduser('~'), 'datalog', 'rosbag2')
-    default_session = f'session_{datetime.now().strftime('%Y-%m-%d')}'
+    default_session = f'session_{datetime.now().strftime("%Y-%m-%d")}'
 
     return LaunchDescription([
         DeclareLaunchArgument(
