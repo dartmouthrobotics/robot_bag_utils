@@ -13,7 +13,17 @@ from launch_ros.actions import ComposableNodeContainer, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
 import yaml
 
+
 def launch_setup(context, *args, **kwargs):
+    ros_distro = os.environ.get('ROS_DISTRO')
+    if ros_distro <= 'humble':
+        recorder_package = 'rosbag2_composable_recorder'
+        recorder_plugin = 'rosbag2_composable_recorder::ComposableRecorder'
+    else:
+        # From Jazzy and above
+        recorder_package = 'rosbag2_transport'
+        recorder_plugin = 'rosbag2_transport::Recorder'
+
     base_config_val = LaunchConfiguration('base_config').perform(context)
     topic_config_val = LaunchConfiguration('topic_config').perform(context)
     use_composable = LaunchConfiguration('use_composable')
@@ -187,8 +197,8 @@ def launch_setup(context, *args, **kwargs):
                 target_container=container_name,
                 composable_node_descriptions=[
                     ComposableNode(
-                        package='rosbag2_composable_recorder',
-                        plugin='rosbag2_composable_recorder::ComposableRecorder',
+                        package=recorder_package,
+                        plugin=recorder_plugin,
                         name='recorder_node',
                         namespace=node_ns,
                         parameters=[composable_params],
