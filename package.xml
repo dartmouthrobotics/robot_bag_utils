@@ -10,7 +10,8 @@
   <depend>launch</depend>
   <depend>launch_ros</depend>
   <depend>rosbag2</depend>
-  <depend>rosbag2_composable_recorder</depend>
+  <depend condition="$ROS_DISTRO &gt;= jazzy">rosbag2_transport</depend>
+  <depend condition="$ROS_DISTRO &lt; jazzy">rosbag2_composable_recorder</depend>
 
   <exec_depend>rosbag2_storage_mcap</exec_depend>
 

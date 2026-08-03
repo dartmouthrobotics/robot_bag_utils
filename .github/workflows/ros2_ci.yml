@@ -27,31 +27,56 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract ROS 2 Package Name
+        run: |
+          NAME=$(python3 -c "import xml.etree.ElementTree as ET; print(ET.parse('package.xml').getroot().find('name').text.strip())")
+          echo "PKG_NAME=$NAME" >> $GITHUB_ENV
+
       - name: Setup ROS 2
         uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
+
+      - name: Clone custom repository dependency (Humble only)
+        if: matrix.ros_distribution == 'humble'
+        run: |
+          sudo apt-get update && sudo apt-get install -y python3-vcstool
+          mkdir -p dependency_src
+          vcs import dependency_src < humble_dependencies.repos
 
       - name: Install dependencies (rosdep)
         run: |
           source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
           sudo apt-get update
           rosdep update
-          rosdep install --from-paths . --ignore-src -y --rosdistro ${{ matrix.ros_distribution }}
+
+          PATHS="."
+          if [ -d "dependency_src" ]; then
+            PATHS=". dependency_src"
+          fi
+
+          rosdep install --from-paths $PATHS --ignore-src -y --rosdistro ${{ matrix.ros_distribution }}
 
       - name: Build Workspace
         run: |
           source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
-          # We build inside a temporary workspace to isolate it
           mkdir -p ~/ws/src
           cp -r $GITHUB_WORKSPACE ~/ws/src/
+
+          rsync -a --exclude='dependency_src' $GITHUB_WORKSPACE/ ~/ws/src/$PKG_NAME/
+
+          # If the dependency folder exists (Humble), copy it into the build workspace too
+          if [ -d "dependency_src" ]; then
+            cp -r dependency_src/* ~/ws/src/
+          fi
+          
           cd ~/ws
-          colcon build --packages-select ardupilot_mavros_utils --symlink-install --event-handlers console_direct+
+          colcon build --packages-select $PKG_NAME --symlink-install --event-handlers console_direct+
 
       - name: Test Workspace (flake8, copyright, etc.)
         run: |
           source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
           cd ~/ws
           source install/setup.bash
-          colcon test --packages-select ardupilot_mavros_utils --event-handlers console_direct+ --return-code-on-test-failure
+          colcon test --packages-select $PKG_NAME --event-handlers console_direct+ --return-code-on-test-failure
           colcon test-result --all --verbose
