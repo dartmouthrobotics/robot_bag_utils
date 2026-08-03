@@ -61,7 +61,6 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.ros_distribution }}/setup.bash
           mkdir -p ~/ws/src
-          cp -r $GITHUB_WORKSPACE ~/ws/src/
 
           rsync -a --exclude='dependency_src' $GITHUB_WORKSPACE/ ~/ws/src/$PKG_NAME/
 
@@ -71,7 +70,7 @@ jobs:
           fi
           
           cd ~/ws
-          colcon build --packages-select $PKG_NAME --symlink-install --event-handlers console_direct+
+          colcon build --packages-up-to $PKG_NAME --symlink-install --event-handlers console_direct+
 
       - name: Test Workspace (flake8, copyright, etc.)
         run: |
