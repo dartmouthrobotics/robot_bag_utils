@@ -3,37 +3,35 @@
 from datetime import datetime
 import os
 import re
-import yaml
 
 from ament_index_python.packages import get_package_share_directory
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, OpaqueFunction
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import ComposableNodeContainer, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
-
+import yaml
 
 def launch_setup(context, *args, **kwargs):
-    base_config_val = LaunchConfiguration("base_config").perform(context)
-    topic_config_val = LaunchConfiguration("topic_config").perform(context)
-    use_composable = LaunchConfiguration("use_composable")
-    create_container = LaunchConfiguration("create_container")
-    container_name = LaunchConfiguration("container_name")
-    namespace_val = LaunchConfiguration("namespace").perform(context).strip('/')
+    base_config_val = LaunchConfiguration('base_config').perform(context)
+    topic_config_val = LaunchConfiguration('topic_config').perform(context)
+    use_composable = LaunchConfiguration('use_composable')
+    create_container = LaunchConfiguration('create_container')
+    container_name = LaunchConfiguration('container_name')
+    namespace_val = LaunchConfiguration('namespace').perform(context).strip('/')
 
     # Format namespace for node/container execution
-    node_ns = f"/{namespace_val}" if namespace_val else ""
+    node_ns = f'/{namespace_val}' if namespace_val else ''
 
     pkg_share = get_package_share_directory('robot_bag_utils')
     base_path = os.path.join(pkg_share, 'config', base_config_val)
     topic_path = os.path.join(pkg_share, 'config', topic_config_val)
 
     if not os.path.exists(base_path):
-        raise FileNotFoundError(f"Base config file not found: {base_path}")
+        raise FileNotFoundError(f'Base config file not found: {base_path}')
     if not os.path.exists(topic_path):
-        raise FileNotFoundError(f"Topic config file not found: {topic_path}")
+        raise FileNotFoundError(f'Topic config file not found: {topic_path}')
 
     # Load both YAML configuration files
     with open(base_path, 'r') as f:
@@ -49,15 +47,15 @@ def launch_setup(context, *args, **kwargs):
     recorder_config = {**base_params, **topic_params}
 
     # Extract settings from merged YAML (allowing launch arguments to override where applicable)
-    storage_id = LaunchConfiguration("storage_id").perform(context) \
+    storage_id = LaunchConfiguration('storage_id').perform(context) \
         or recorder_config.get('storage_id', 'mcap')
 
-    max_cache_size_str = LaunchConfiguration("max_cache_size").perform(context)
+    max_cache_size_str = LaunchConfiguration('max_cache_size').perform(context)
     try:
         max_cache_size_bytes = int(max_cache_size_str) if max_cache_size_str \
             else int(recorder_config.get('max_cache_size', 104857600))
     except ValueError:
-        raise ValueError(f"max_cache_size must be an integer (bytes), got: {max_cache_size_str}")
+        raise ValueError(f'max_cache_size must be an integer (bytes), got: {max_cache_size_str}')
 
     preset_profile = recorder_config.get('storage_preset_profile', '')
     comp_format = recorder_config.get('compression_format', '')
@@ -69,17 +67,17 @@ def launch_setup(context, *args, **kwargs):
     qos_overrides = recorder_config.get('qos_profile_overrides', [])
 
     # Hierarchical Directory Inputs
-    raw_root_dir = LaunchConfiguration("root_bag_dir").perform(context)
-    raw_session_dir = LaunchConfiguration("session_dir").perform(context)
-    raw_bag_name = LaunchConfiguration("bag_name").perform(context)
+    raw_root_dir = LaunchConfiguration('root_bag_dir').perform(context)
+    raw_session_dir = LaunchConfiguration('session_dir').perform(context)
+    raw_bag_name = LaunchConfiguration('bag_name').perform(context)
 
     # Resolve full bag folder name automatically using the topic config profile name
     now_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     profile_tag = os.path.splitext(topic_config_val)[0].replace('_topics', '')
-    ns_prefix = f"{namespace_val}_" if namespace_val else ""
+    ns_prefix = f'{namespace_val}_' if namespace_val else ''
 
     if not raw_bag_name:
-        bag_name = f"{ns_prefix}{profile_tag}_bag_{now_str}"
+        bag_name = f'{ns_prefix}{profile_tag}_bag_{now_str}'
     else:
         bag_name = raw_bag_name
 
@@ -99,7 +97,7 @@ def launch_setup(context, *args, **kwargs):
     topics = []
     for t in raw_topics:
         if namespace_val and not t.startswith('/'):
-            topics.append(f"/{namespace_val}/{t}")
+            topics.append(f'/{namespace_val}/{t}')
         else:
             topics.append(t)
 
@@ -109,7 +107,7 @@ def launch_setup(context, *args, **kwargs):
         updated_override = override.copy()
         topic_name = updated_override.get('topic', '')
         if namespace_val and topic_name and not topic_name.startswith('/'):
-            updated_override['topic'] = f"/{namespace_val}/{topic_name}"
+            updated_override['topic'] = f'/{namespace_val}/{topic_name}'
         processed_qos_overrides.append(updated_override)
 
     # Filter out topics locally in Python if an exclude regex is provided
@@ -119,30 +117,30 @@ def launch_setup(context, *args, **kwargs):
 
     # Build standalone command arguments
     cmd_args = [
-        "ros2", "bag", "record",
-        "--output", bag_prefix,
-        "-s", storage_id,
-        "--max-cache-size", str(max_cache_size_bytes),
+        'ros2', 'bag', 'record',
+        '--output', bag_prefix,
+        '-s', storage_id,
+        '--max-cache-size', str(max_cache_size_bytes),
     ]
 
     if namespace_val:
-        cmd_args.extend(["--node-name", f"{namespace_val}_bag_recorder"])
-    if storage_id == "mcap" and preset_profile:
-        cmd_args.extend(["--storage-preset-profile", preset_profile])
+        cmd_args.extend(['--node-name', f'{namespace_val}_bag_recorder'])
+    if storage_id == 'mcap' and preset_profile:
+        cmd_args.extend(['--storage-preset-profile', preset_profile])
     elif comp_format and comp_mode:
-        cmd_args.extend(["--compression-format", comp_format, "--compression-mode", comp_mode])
+        cmd_args.extend(['--compression-format', comp_format, '--compression-mode', comp_mode])
     if max_bag_size > 0:
-        cmd_args.extend(["--max-bag-size", str(max_bag_size)])
+        cmd_args.extend(['--max-bag-size', str(max_bag_size)])
     if max_bag_duration > 0:
-        cmd_args.extend(["--max-bag-duration", str(max_bag_duration)])
+        cmd_args.extend(['--max-bag-duration', str(max_bag_duration)])
 
     if exclude_regex and not topics:
-        cmd_args.extend(["--exclude", exclude_regex])
+        cmd_args.extend(['--exclude', exclude_regex])
 
     standalone_record_cmd = ExecuteProcess(
         condition=UnlessCondition(use_composable),
         cmd=cmd_args + topics,
-        output="screen",
+        output='screen',
         sigterm_timeout='30.0',
         sigkill_timeout='30.0'
     )
@@ -159,7 +157,7 @@ def launch_setup(context, *args, **kwargs):
         'disable_discovery': False,
     }
 
-    if storage_id == "mcap" and preset_profile:
+    if storage_id == 'mcap' and preset_profile:
         composable_params['storage_preset_profile'] = preset_profile
     elif comp_format and comp_mode:
         composable_params['compression_format'] = comp_format
@@ -206,64 +204,64 @@ def launch_setup(context, *args, **kwargs):
 
 def generate_launch_description():
     default_root = os.path.join(os.path.expanduser('~'), 'datalog', 'rosbag2')
-    default_session = f"session_{datetime.now().strftime('%Y-%m-%d')}"
+    default_session = f'session_{datetime.now().strftime('%Y-%m-%d')}'
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            "namespace",
-            default_value="",
-            description="Optional namespace for node scoping and relative topic mapping",
+            'namespace',
+            default_value='',
+            description='Optional namespace for node scoping and relative topic mapping',
         ),
         DeclareLaunchArgument(
-            "base_config",
-            default_value="common_logger.yaml",
-            description="Base YAML filename inside config/ containing global logging settings",
+            'base_config',
+            default_value='common_logger.yaml',
+            description='Base YAML filename inside config/ containing global logging settings',
         ),
         DeclareLaunchArgument(
-            "topic_config",
-            default_value="mavros_topics.yaml",
-            description="Topic YAML filename inside config/ containing topics and overrides",
+            'topic_config',
+            default_value='mavros_topics.yaml',
+            description='Topic YAML filename inside config/ containing topics and overrides',
         ),
         DeclareLaunchArgument(
-            "storage_id",
-            default_value="",
-            description="Storage plugin override (mcap, sqlite3). Blank defaults to YAML config.",
+            'storage_id',
+            default_value='',
+            description='Storage plugin override (mcap, sqlite3). Blank defaults to YAML config.',
         ),
         DeclareLaunchArgument(
-            "max_cache_size",
-            default_value="",
-            description="Max cache size bytes override. Blank defaults to YAML config.",
+            'max_cache_size',
+            default_value='',
+            description='Max cache size bytes override. Blank defaults to YAML config.',
         ),
         DeclareLaunchArgument(
-            "root_bag_dir",
+            'root_bag_dir',
             default_value=default_root,
-            description="Root base directory where all mission sessions are stored",
+            description='Root base directory where all mission sessions are stored',
         ),
         DeclareLaunchArgument(
-            "session_dir",
+            'session_dir',
             default_value=default_session,
-            description="Session subfolder grouping multiple runs (defaults to date)",
+            description='Session subfolder grouping multiple runs (defaults to date)',
         ),
         DeclareLaunchArgument(
-            "bag_name",
-            default_value="",
-            description="Custom bag folder name (if empty, auto-generates tag + timestamp)",
+            'bag_name',
+            default_value='',
+            description='Custom bag folder name (if empty, auto-generates tag + timestamp)',
         ),
         DeclareLaunchArgument(
-            "use_composable",
-            default_value="false",
-            description="Use composable rosbag recorder in a component container",
+            'use_composable',
+            default_value='false',
+            description='Use composable rosbag recorder in a component container',
         ),
         DeclareLaunchArgument(
-            "create_container",
-            default_value="false",
-            description=("Launches a new container if true",
-                         "or attaches to an existing one if false."),
+            'create_container',
+            default_value='false',
+            description=('Launches a new container if true',
+                         'or attaches to an existing one if false.'),
         ),
         DeclareLaunchArgument(
-            "container_name",
-            default_value="recorder_container",
-            description="Composable container name used when use_composable:=true",
+            'container_name',
+            default_value='recorder_container',
+            description='Composable container name used when use_composable:=true',
         ),
         OpaqueFunction(function=launch_setup),
     ])

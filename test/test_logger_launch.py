@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 import unittest
-import pytest
 
 from ament_index_python.packages import get_package_share_directory
 import launch
@@ -10,6 +9,7 @@ from launch.actions import TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 import launch_testing
 import launch_testing.actions
+import pytest
 
 # Create isolated directories for both execution modes
 TMP_DIR_STANDALONE = tempfile.mkdtemp()
@@ -69,7 +69,7 @@ class TestLoggerLaunchRuntime(unittest.TestCase):
             procs = proc_info.processes()
             # We expect multiple active processes (the CLI tool + the container)
             self.assertGreater(
-                len(procs), 1, "Expected both standalone and container processes to be running."
+                len(procs), 1, 'Expected both standalone and container processes to be running.'
             )
 
 
@@ -99,14 +99,14 @@ class TestLoggerLaunchShutdown(unittest.TestCase):
 
                 # The ultimate generic catch: fail if ANY [ERROR] is logged
                 self.assertNotIn(
-                    "[ERROR]",
+                    '[ERROR]',
                     text,
-                    f"An error was logged: {text.strip()}"
+                    f'An error was logged: {text.strip()}'
                 )
 
                 # Also catch fatal crashes
                 self.assertNotIn(
-                    "[FATAL]",
+                    '[FATAL]',
                     text,
-                    f"A fatal fault was logged: {text.strip()}"
+                    f'A fatal fault was logged: {text.strip()}'
                 )
