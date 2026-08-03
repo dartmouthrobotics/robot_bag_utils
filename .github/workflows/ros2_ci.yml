@@ -3,8 +3,13 @@ name: ROS 2 CI
 on:
   push:
     branches: [ main ]
+    paths-ignore: &ignored_paths
+      - '**/*.sh'
+      - README.md
+      - LICENSE
   pull_request:
     branches: [ main ]
+    paths-ignore: *ignored_paths
   # Allow manual triggering from the GitHub UI
   workflow_dispatch:
 

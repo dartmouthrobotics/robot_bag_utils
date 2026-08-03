@@ -27,6 +27,8 @@ robot_bag_utils/
 │   └── zed_topics.yaml          # Multi-camera topic profile & QoS overrides
 ├── launch/
 │   └── logger.launch.py         # Dynamic launch engine supporting CLI & Composable modes
+|── scripts/
+|   └── merge_split_bags.sh      # Utility script for merging split bags
 ├── test/
 │   └── test_logger_launch.py    # Automated launch test suite
 ├── package.xml
@@ -118,6 +120,20 @@ ros2 launch robot_bag_utils logger.launch.py topic_config:=ouster_topics.yaml us
 # Terminal 2: Attach MAVROS logger to the existing container
 ros2 launch robot_bag_utils logger.launch.py topic_config:=mavros_topics.yaml use_composable:=true create_container:=false container_name:=robot_container
 ```
+
+---
+
+## Utility Scripts
+
+The repository includes helper scripts for managing and recovering bag files. For instance, `merge_split_bags.sh` automates the process of:
+1. Downloading the `mcap` CLI automatically if missing.
+2. Decompressing `.mcap.zstd` files.
+3. Running `mcap recover` on uncompressed trailing splits.
+4. Merging all parts into a single clean MCAP file.
+
+### Usage
+```bash
+./path/to/merge_split_bags.sh -i /path/to/bag_directory
 
 ---
 
