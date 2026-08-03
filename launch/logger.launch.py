@@ -13,10 +13,13 @@ from launch_ros.actions import ComposableNodeContainer, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
 import yaml
 
+HUMBLE = 'humble'
+
 
 def launch_setup(context, *args, **kwargs):
     ros_distro = os.environ.get('ROS_DISTRO')
-    if ros_distro <= 'humble':
+    is_legacy = ros_distro <= HUMBLE
+    if is_legacy:
         recorder_package = 'rosbag2_composable_recorder'
         recorder_plugin = 'rosbag2_composable_recorder::ComposableRecorder'
     else:
@@ -157,29 +160,47 @@ def launch_setup(context, *args, **kwargs):
 
     # Composable recorder mode parameters dictionary
     composable_params = {
-        'bag_name': bag_prefix,
-        'storage_id': storage_id,
-        'max_cache_size': max_cache_size_bytes,
-        'record_all': False,
-        'serialization_format': 'cdr',
-        'start_recording_immediately': True,
-        'topics': topics,
-        'disable_discovery': False,
+        ('bag_name' if is_legacy else 'storage.uri'): bag_prefix,
+        ('storage_id' if is_legacy else 'storage.storage_id'): storage_id,
+        ('max_cache_size' if is_legacy else 'storage.max_cache_size'): max_cache_size_bytes,
+        ('record_all' if is_legacy else 'record.all'): False,
+        ('serialization_format' if is_legacy else 'record.serialization_format'): 'cdr',
+        ('topics' if is_legacy else 'record.topics'): topics,
+        ('disable_discovery' if is_legacy else 'record.is_discovery_disabled'): False,
+        # composable recorder; standard transport recorder controls this via 'record.start_paused'
+        ('start_recording_immediately' if is_legacy \
+            else 'record.start_paused'): (True if is_legacy else False),
     }
 
+    # Handle conditional profile and compression properties
     if storage_id == 'mcap' and preset_profile:
-        composable_params['storage_preset_profile'] = preset_profile
+        key = 'storage_preset_profile' if is_legacy else 'storage.storage_preset_profile'
+        composable_params[key] = preset_profile
     elif comp_format and comp_mode:
-        composable_params['compression_format'] = comp_format
-        composable_params['compression_mode'] = comp_mode
+        if is_legacy:
+            composable_params.update({'compression_format': comp_format,
+                                      'compression_mode': comp_mode})
+        else:
+            composable_params.update({'record.compression_format': comp_format,
+                                      'record.compression_mode': comp_mode})
+
+    # Handle splitting parameters
     if max_bag_size > 0:
-        composable_params['max_bag_size'] = max_bag_size
+        key = 'max_bag_size' if is_legacy else 'storage.max_bagfile_size'
+        composable_params[key] = max_bag_size
+
     if max_bag_duration > 0:
-        composable_params['max_bag_duration'] = max_bag_duration
+        key = 'max_bag_duration' if is_legacy else 'storage.max_bagfile_duration'
+        composable_params[key] = max_bag_duration
+
+    # Handle filters and overrides
     if exclude_regex:
-        composable_params['regex_to_exclude'] = exclude_regex
+        key = 'regex_to_exclude' if is_legacy else 'record.regex_to_exclude'
+        composable_params[key] = exclude_regex
+
     if processed_qos_overrides:
-        composable_params['qos_profile_overrides'] = processed_qos_overrides
+        key = 'qos_profile_overrides' if is_legacy else 'record.qos_profile_overrides_path'
+        composable_params[key] = processed_qos_overrides
 
     composable_record_cmd = GroupAction(
         condition=IfCondition(use_composable),
