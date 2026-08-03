@@ -1,11 +1,11 @@
 """Launch file to dynamically synchronize and play multiple ROS 2 Humble bags."""
 
 import os
-import yaml
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction, TimerAction
 from launch.substitutions import LaunchConfiguration
+import yaml
 
 
 def launch_setup(context, *args, **kwargs):
@@ -35,7 +35,7 @@ def launch_setup(context, *args, **kwargs):
                     start_ns = info['starting_time']['nanoseconds_since_epoch']
                     bag_data.append({'path': item_path, 'start_ns': start_ns})
                 except Exception as e:
-                    raise RuntimeError(f"Failed to parse start time from {meta_path}: {e}")
+                    raise RuntimeError(f'Failed to parse start time from {meta_path}: {e}')
 
     if not bag_data:
         raise RuntimeError(f'No valid ROS 2 bags found in: {session_path}')
@@ -52,8 +52,6 @@ def launch_setup(context, *args, **kwargs):
         # Calculate the delay in seconds, adjusted for the playback rate
         delay_sec = ((bag['start_ns'] - min_start_ns) / 1e9) / rate
         is_oldest = (bag['start_ns'] == min_start_ns)
-
-        print(f"AAAAAAAAAAAAAAAAAA {bag} {delay_sec}")
 
         # ONLY the oldest bag is allowed to publish to /clock
         if is_oldest and publish_clock.lower() in ['true', 't', '1', 'yes']:

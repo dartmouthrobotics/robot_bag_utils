@@ -2,20 +2,19 @@
 
 import os
 import shutil
+import sqlite3
 import tempfile
 import unittest
 
+from ament_index_python.packages import get_package_share_directory
 import launch
-from launch.actions import TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 import launch_testing
 import launch_testing.actions
 import pytest
-from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
-# FIX: Replaced @pytest.fixture(scope='module') with @pytest.mark.launch_test
 @pytest.mark.launch_test
 def generate_test_description():
     # 1. Setup a temporary filesystem structure to mock a datalog session
@@ -33,14 +32,73 @@ def generate_test_description():
             '  version: 5\n'
             '  storage_identifier: sqlite3\n'
             '  duration:\n'
-            '    nanoseconds: 1000000\n'
+            '    nanoseconds: 5000000000\n'
             '  starting_time:\n'
             '    nanoseconds_since_epoch: 1700000000000000000\n'
-            '  message_count: 10\n'
-            '  topics_with_message_count: []\n'
-            '  relative_file_paths: ["mock_bag_1_0.db3"]\n'
-            '  files: []\n'
+            '  message_count: 2\n'
+            '  topics_with_message_count:\n'
+            '    -\n'
+            '      topic_metadata:\n'
+            '        name: /test_topic\n'
+            '        type: std_msgs/msg/String\n'
+            '        serialization_format: cdr\n'
+            '        offered_qos_profiles: ""\n'
+            '      message_count: 1\n'
+            '  compression_format: ""\n'
+            '  compression_mode: ""\n'
+            '  relative_file_paths:\n'
+            '    - mock_bag_1_0.db3\n'
+            '  files:\n'
+            '    -\n'
+            '      path: mock_bag_1_0.db3\n'
+            '      starting_time:\n'
+            '        nanoseconds_since_epoch: 1700000000000000000\n'
+            '      duration:\n'
+            '        nanoseconds: 1000000\n'
+            '      message_count: 2\n'
+            '  serialization_format: cdr\n'
         )
+
+    # Create a dummy sqlite3 database file so rosbag2 storage can open it
+    db_file_path = os.path.join(bag_path, 'mock_bag_1_0.db3')
+    conn = sqlite3.connect(db_file_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        'CREATE TABLE topics ('
+        'id INTEGER PRIMARY KEY, '
+        'name TEXT, '
+        'type TEXT, '
+        'serialization_format TEXT, '
+        'offered_qos_profiles TEXT'
+        ');'
+    )
+    cursor.execute(
+        'CREATE TABLE messages ('
+        'id INTEGER PRIMARY KEY, '
+        'topic_id INTEGER, '
+        'timestamp INTEGER, '
+        'data BLOB'
+        ');'
+    )
+
+    # Insert a dummy topic and message so the bag player doesn't exit instantly
+    cursor.execute(
+        'INSERT INTO topics (id, name, type, serialization_format, offered_qos_profiles) '
+        'VALUES (?, ?, ?, ?, ?);',
+        (1, '/test_topic', 'std_msgs/msg/String', 'cdr', '')
+    )
+    cursor.execute(
+        'INSERT INTO messages (id, topic_id, timestamp, data) '
+        'VALUES (?, ?, ?, ?);',
+        (1, 1, 1700000000000000000, b'\x00')
+    )
+    cursor.execute(
+        'INSERT INTO messages (id, topic_id, timestamp, data) '
+        'VALUES (?, ?, ?, ?);',
+        (2, 1, 1700000005000000000, b'\x00')
+    )
+    conn.commit()
+    conn.close()
 
     # 2. Locate the launch file
     launch_file_path = os.path.join(
@@ -57,7 +115,7 @@ def generate_test_description():
             'session_dir': session_name,
             'rate': '1.0',
             'clock': 'false',
-            'loop': 'false',
+            'loop': 'true',
         }.items()
     )
 
