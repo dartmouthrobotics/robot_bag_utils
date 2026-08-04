@@ -136,8 +136,7 @@ def launch_setup(context, *args, **kwargs):
         '--max-cache-size', str(max_cache_size_bytes),
     ]
 
-    if namespace_val:
-        cmd_args.extend(['--node-name', f'{namespace_val}_bag_recorder'])
+    # Note: There is no namespace for ros2 bag record
     if storage_id == 'mcap' and preset_profile:
         cmd_args.extend(['--storage-preset-profile', preset_profile])
     elif comp_format and comp_mode:
